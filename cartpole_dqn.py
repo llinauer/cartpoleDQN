@@ -6,6 +6,10 @@ Control the Cartpole environment with the DQN-method and a MLP.
 
 """
 
+import argparse
+
+import gymnasium as gym
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -32,7 +36,22 @@ class MLPController(nn.Module):
         return x
 
 
+def parse_args():
+    """ Parse command-line arguments """
+    
+    parser = argparse.ArgumentParser(description='Train the cartpole system with DQN')
+    parser.add_argument('--task', choice=['steady', 'swing-up'], type=str,
+                        help='Choose the type of task, either keeping the pole steady'
+                             ' or doing a swing up')
+    args = parser.parse_args()
+
+    return args
 
 def main():
     """ main function """
-    pass
+    
+    # parse cl-args
+    args = parse_args()
+
+    # create environment
+    env = gym.make('CartPole-v1', render_mode='rgb_array')
