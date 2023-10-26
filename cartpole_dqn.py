@@ -2,20 +2,21 @@
 
 cartpole_dqn.py
 
-Control the Cartpole environment with the DQN-method and a MLP.
+Control the Cartpole environment with the DQN-method.
 
 """
 
 import argparse
-
+import numpy as np
 import gymnasium as gym
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-class MLPController(nn.Module):
-    """ MLP controller with one hidden layer and tanh activation """
+
+class DQN(nn.Module):
+    """ Deep-Q Network to estimate the Q-value of a state """
 
     def __init__(self):
         """ Constructor, define layers """
@@ -24,7 +25,7 @@ class MLPController(nn.Module):
         # define layers
         self.fc1 = nn.Linear(4, 128)
         self.fc2 = nn.Linear(128, 128)
-        self.fc3 = nn.Linear(128, 2)
+        self.fc3 = nn.Linear(128, 1)
 
     def forward(self, x):
         """ Forward pass through the network """
@@ -40,12 +41,20 @@ def parse_args():
     """ Parse command-line arguments """
     
     parser = argparse.ArgumentParser(description='Train the cartpole system with DQN')
-    parser.add_argument('--task', choice=['steady', 'swing-up'], type=str,
+    parser.add_argument('--task', choices=['steady', 'swing-up'], type=str,
                         help='Choose the type of task, either keeping the pole steady'
-                             ' or doing a swing up')
+                             ' or doing a swing up', required=True)
     args = parser.parse_args()
 
     return args
+
+
+def sample(env, batch_size, upswing):
+    """ Generate a batch of samples from the environment """
+    
+    # reset the environment
+    obs, _ = env.reset(upswing=upswing)
+
 
 def main():
     """ main function """
@@ -55,3 +64,7 @@ def main():
 
     # create environment
     env = gym.make('CartPole-v1', render_mode='rgb_array')
+
+
+if __name__ == '__main__':
+    main()

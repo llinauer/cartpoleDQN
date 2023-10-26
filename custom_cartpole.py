@@ -15,6 +15,12 @@ from gymnasium.error import DependencyNotInstalled
 from gymnasium.experimental.vector import VectorEnv
 from gymnasium.vector.utils import batch_space
 
+gym.envs.register(
+    id='CustomCartPole-v1',
+    entry_point='custom_cartpole:CartPoleEnv',
+    max_episode_steps=2000,
+)
+
 
 class CartPoleEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
     """
