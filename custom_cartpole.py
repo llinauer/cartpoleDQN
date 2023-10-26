@@ -88,7 +88,7 @@ class CartPoleEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         "render_fps": 50,
     }
 
-    def __init__(self, render_mode: Optional[str] = None):
+    def __init__(self, render_mode: Optional[str] = None, upswing=False):
         self.gravity = 9.8
         self.masscart = 1.0
         self.masspole = 0.1
@@ -98,6 +98,7 @@ class CartPoleEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         self.force_mag = 10.0
         self.tau = 0.02  # seconds between state updates
         self.kinematics_integrator = "euler"
+        self.upswing = upswing
 
         # Angle at which to fail the episode
         self.theta_threshold_radians = 12 * 2 * math.pi / 360
@@ -162,15 +163,22 @@ class CartPoleEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
 
         self.state = (x, x_dot, theta, theta_dot)
 
-        terminated = bool(
-            x < -self.x_threshold
-            or x > self.x_threshold
-            or theta < -self.theta_threshold_radians
-            or theta > self.theta_threshold_radians
-        )
+        if self.upswing:
+            terminated = bool(
+                x < -self.x_threshold
+                or x > self.x_threshold
+            )
+        else:
+            terminated = bool(
+                x < -self.x_threshold
+                or x > self.x_threshold
+                or theta < -self.theta_threshold_radians
+                or theta > self.theta_threshold_radians
+            )
 
         if not terminated:
-            reward = 1.0
+            reward = self.get_reward()
+
         elif self.steps_beyond_terminated is None:
             # Pole just fell!
             self.steps_beyond_terminated = 0
@@ -190,6 +198,23 @@ class CartPoleEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
             self.render()
         return np.array(self.state, dtype=np.float32), reward, terminated, False, {}
 
+    def get_reward(self):
+
+        x, _, theta, _ = self.state
+
+        if self.upswing:
+            theta_reward = (np.cos(theta) + 1) / 2
+            pos_norm = self.x_threshold - abs(x)
+            pos_reward = x / pos_norm
+
+            # weight the angle reward and position reward differently, as the angle is more important
+            reward = 1/4*pos_reward + 3/4*theta_reward
+
+        else:
+            reward = 1
+
+        return reward
+
     def reset(
         self,
         *,
@@ -202,7 +227,18 @@ class CartPoleEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         low, high = utils.maybe_parse_reset_bounds(
             options, -0.05, 0.05  # default low
         )  # default high
-        self.state = self.np_random.uniform(low=low, high=high, size=(4,))
+
+        if self.upswing:
+            start_theta = np.pi
+        else:
+            start_theta = 0.
+
+        start_x = self.np_random.uniform(low=low, high=high, size=(1,))
+        start_x_dot = self.np_random.uniform(low=low, high=high, size=(1,))
+        start_theta = self.np_random.uniform(low=low, high=high, size=(1,)) + start_theta
+        start_theta_dot = self.np_random.uniform(low=low, high=high, size=(1,))
+
+        self.state = np.array([start_x, start_x_dot, start_theta, start_theta_dot])
         self.steps_beyond_terminated = None
 
         if self.render_mode == "human":
