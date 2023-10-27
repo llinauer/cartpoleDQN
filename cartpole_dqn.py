@@ -21,9 +21,10 @@ EPSILON_START = 1.0
 EPSILON_FINAL = 0.1
 EPSILON_DECAY_STEP = 1.5E-5
 GAMMA = 0.99
-REPLAY_SIZE = 1E5
+REPLAY_START_SIZE = 100000
 LEARNING_RATE = 1E-3
 SYNC_TARGET_FRAMES = 1000
+MAX_EPISODE_STEPS = 200
 
 
 class DQN(nn.Module):
@@ -80,7 +81,7 @@ def environment_step(env, current_state, net, epsilon):
         Return the taken action, the reward, if the environment is done or truncated and the next state """
 
     # create a random number between 0 and 1, if it is > epsilon, take a random action
-    if np.random.uniform() > epsilon:
+    if np.random.uniform() < epsilon:
         action = env.action_space.sample()
     else:
         q_vals = net(torch.tensor(current_state))
@@ -91,6 +92,34 @@ def environment_step(env, current_state, net, epsilon):
     return action, reward, done or trunc, next_state
 
 
+def calculate_loss(batch, train_net, target_net):
+    """ Calculate the MSELoss for predicted Q values on the batch and return it """
+
+    states, actions, rewards, dones, next_states = batch  # unpack batch
+
+    states_tensor = torch.tensor(states)
+    actions_tensor = torch.tensor(actions)
+    rewards_tensor = torch.tensor(rewards)
+    done_mask = torch.BoolTensor(dones)
+    next_states_tensor = torch.tensor(next_states)
+
+    state_action_values = train_net(states_tensor).gather(1, actions_tensor.unsqueeze(-1)).squeeze(-1)
+
+    # do not calculate gradients for Q values calculated with target_net
+    with torch.no_grad():
+
+        # get the maximum Q value for the next_state
+        next_state_action_values = target_net(next_states_tensor).max(1)[0]
+        next_state_action_values[done_mask] = 0.0  # Q = 0 if the episode ended
+        next_state_action_values = next_state_action_values.detach()
+
+    # we can get an estimate of the state-action value Q(s,a) by calculating:
+    # Q(s,a) ~ r(s,a) + gamma * max(Q(s',a))
+    expected_state_action_values = rewards_tensor + next_state_action_values * GAMMA
+
+    return nn.MSELoss()(state_action_values, expected_state_action_values)
+
+
 def main():
     """ main function """
     
@@ -99,23 +128,29 @@ def main():
 
     upswing = args.task == 'upswing'
 
+    # define the maximum mean reward needed for stopping training
+    if upswing:
+        mean_reward_bound = MAX_EPISODE_STEPS * 0.95
+    else:
+        mean_reward_bound = MAX_EPISODE_STEPS
+
     # create environment
-    env = gym.make('CustomCartPole-v1', render_mode='rgb_array', upswing=upswing)
+    env = gym.make('CustomCartPole-v1', render_mode='rgb_array', upswing=upswing, max_episode_steps=MAX_EPISODE_STEPS)
 
     # create two instances of DQN, the training and the target network
     train_net = DQN()
     target_net = DQN()
 
     # create a replay buffer
-    replay_buffer = collections.deque(maxlen=REPLAY_SIZE)
+    replay_buffer = collections.deque(maxlen=REPLAY_START_SIZE)
 
     # training loop
     frame_idx = 0
     epsilon = EPSILON_START
     state, _ = env.reset()
-    optimizer = torch.optim.adam(train_net.parameters(), lr=LEARNING_RATE)
-    total_reward = 0
-    mean_reward_100 = 0.
+    optimizer = torch.optim.Adam(train_net.parameters(), lr=LEARNING_RATE)
+    total_reward = 0.
+    mean_rewards = collections.deque(maxlen=100)
 
     while True:
 
@@ -127,7 +162,41 @@ def main():
 
         # do one step in the environment
         action, reward, done_or_trunc, next_state = environment_step(env, state, train_net, epsilon)
+        total_reward += reward
 
+        # put the sampled state, reward, action and next_state in the replay buffer
+        replay_buffer.append((state, action, reward, done_or_trunc, next_state))
+
+        # check if the episode has ended
+        if done_or_trunc:
+            mean_rewards.append(total_reward)
+            mean_reward_100 = np.mean(mean_rewards)
+            if frame_idx % 10000 == 0:
+                print(f'Timestep: {frame_idx}, mean reward of the last 100 episodes: {mean_reward_100}')
+
+            if mean_reward_100 >= mean_reward_bound:
+                print(f'Solved in {frame_idx} steps! Mean reward: {mean_reward_100}')
+                torch.save(target_net.state_dict(), f'cartpole_dqn_{args.task}_weights.pth')
+                break
+
+            # reset the environment and the total_reward
+            state, _ = env.reset()
+            total_reward = 0.
+
+        # fill the buffer before training
+        if len(replay_buffer) < REPLAY_START_SIZE:
+            continue
+
+        # sync the target_net weights with the train_net weights every SYNC_TARGET_FRAMES frames
+        if frame_idx % SYNC_TARGET_FRAMES == 0:
+            target_net.load_state_dict(train_net.state_dict())
+
+        # gradient descent
+        optimizer.zero_grad()
+        batch = sample(replay_buffer, BATCH_SIZE)
+        loss_tensor = calculate_loss(batch, train_net, target_net)
+        loss_tensor.backward()
+        optimizer.step()
 
 
 if __name__ == '__main__':
