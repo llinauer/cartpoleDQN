@@ -239,10 +239,10 @@ class CartPoleEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         else:
             start_theta = 0.
 
-        start_x = self.np_random.uniform(low=low, high=high, size=(1,))
-        start_x_dot = self.np_random.uniform(low=low, high=high, size=(1,))
-        start_theta = self.np_random.uniform(low=low, high=high, size=(1,)) + start_theta
-        start_theta_dot = self.np_random.uniform(low=low, high=high, size=(1,))
+        start_x = self.np_random.uniform(low=low, high=high)
+        start_x_dot = self.np_random.uniform(low=low, high=high)
+        start_theta = self.np_random.uniform(low=low, high=high) + start_theta
+        start_theta_dot = self.np_random.uniform(low=low, high=high)
 
         self.state = np.array([start_x, start_x_dot, start_theta, start_theta_dot])
         self.steps_beyond_terminated = None
