@@ -19,9 +19,9 @@ import custom_cartpole
 BATCH_SIZE = 32
 EPSILON_START = 1.0
 EPSILON_FINAL = 0.1
-EPSILON_DECAY_STEP = 1.5E-5
+EPSILON_FINAL_TIMESTEP = 200000
 GAMMA = 0.99
-REPLAY_START_SIZE = 100000
+REPLAY_START_SIZE = 10000
 LEARNING_RATE = 1E-3
 SYNC_TARGET_FRAMES = 1000
 MAX_EPISODE_STEPS = 200
@@ -146,7 +146,6 @@ def main():
 
     # training loop
     frame_idx = 0
-    epsilon = EPSILON_START
     state, _ = env.reset()
     optimizer = torch.optim.Adam(train_net.parameters(), lr=LEARNING_RATE)
     total_reward = 0.
@@ -157,7 +156,7 @@ def main():
         frame_idx += 1
 
         # decrease epsilon every step until EPSILON_FINAL is reached
-        epsilon -= EPSILON_DECAY_STEP
+        epsilon = EPSILON_START - (frame_idx / EPSILON_FINAL_TIMESTEP)
         epsilon = max(epsilon, EPSILON_FINAL)
 
         # do one step in the environment
@@ -171,8 +170,6 @@ def main():
         if done_or_trunc:
             mean_rewards.append(total_reward)
             mean_reward_100 = np.mean(mean_rewards)
-            if frame_idx % 10000 == 0:
-                print(f'Timestep: {frame_idx}, mean reward of the last 100 episodes: {mean_reward_100}')
 
             if mean_reward_100 >= mean_reward_bound:
                 print(f'Solved in {frame_idx} steps! Mean reward: {mean_reward_100}')
@@ -182,6 +179,9 @@ def main():
             # reset the environment and the total_reward
             state, _ = env.reset()
             total_reward = 0.
+
+        if frame_idx % 10000 == 0:
+            print(f'Timestep: {frame_idx}, mean reward of the last 100 episodes: {mean_reward_100}')
 
         # fill the buffer before training
         if len(replay_buffer) < REPLAY_START_SIZE:
@@ -197,6 +197,10 @@ def main():
         loss_tensor = calculate_loss(batch, train_net, target_net)
         loss_tensor.backward()
         optimizer.step()
+
+        if frame_idx % 1000 == 0:
+            print(f'Loss: {loss_tensor.item()}')
+
 
 
 if __name__ == '__main__':
