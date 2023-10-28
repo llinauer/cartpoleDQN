@@ -18,11 +18,11 @@ import custom_cartpole
 
 BATCH_SIZE = 32
 EPSILON_START = 1.0
-EPSILON_FINAL = 0.1
-EPSILON_FINAL_TIMESTEP = 200000
+EPSILON_FINAL = 0.01
+EPSILON_DECAY_LAST_FRAME = 150000
 GAMMA = 0.99
 REPLAY_START_SIZE = 10000
-LEARNING_RATE = 1E-3
+LEARNING_RATE = 1E-4
 SYNC_TARGET_FRAMES = 1000
 MAX_EPISODE_STEPS = 200
 
@@ -156,8 +156,7 @@ def main():
         frame_idx += 1
 
         # decrease epsilon every step until EPSILON_FINAL is reached
-        epsilon = EPSILON_START - (frame_idx / EPSILON_FINAL_TIMESTEP)
-        epsilon = max(epsilon, EPSILON_FINAL)
+        epsilon = max(EPSILON_FINAL, EPSILON_START - frame_idx / EPSILON_DECAY_LAST_FRAME)
 
         # do one step in the environment
         action, reward, done_or_trunc, next_state = environment_step(env, state, train_net, epsilon)
@@ -165,6 +164,8 @@ def main():
 
         # put the sampled state, reward, action and next_state in the replay buffer
         replay_buffer.append((state, action, reward, done_or_trunc, next_state))
+
+        state = next_state
 
         # check if the episode has ended
         if done_or_trunc:
