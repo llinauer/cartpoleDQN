@@ -24,7 +24,6 @@ GAMMA = 0.99
 REPLAY_START_SIZE = 10000
 LEARNING_RATE = 1E-4
 SYNC_TARGET_FRAMES = 1000
-MAX_EPISODE_STEPS = 200
 
 
 class DQN(nn.Module):
@@ -56,6 +55,7 @@ def parse_args():
     parser.add_argument('--task', choices=['steady', 'upswing'], type=str,
                         help='Choose the type of task, either keeping the pole steady'
                              ' or doing an upswing', required=True)
+    parser.add_argument('--max-steps', type=int, help='The maximum number of steps to run the simulation', default=2000)
     args = parser.parse_args()
 
     return args
@@ -130,12 +130,12 @@ def main():
 
     # define the maximum mean reward needed for stopping training
     if upswing:
-        mean_reward_bound = MAX_EPISODE_STEPS * 0.95
+        mean_reward_bound = args.max_steps * 0.95
     else:
-        mean_reward_bound = MAX_EPISODE_STEPS
+        mean_reward_bound = args.max_steps
 
     # create environment
-    env = gym.make('CustomCartPole-v1', render_mode='rgb_array', upswing=upswing, max_episode_steps=MAX_EPISODE_STEPS)
+    env = gym.make('CustomCartPole-v1', render_mode='rgb_array', upswing=upswing, max_episode_steps=args.max_steps)
 
     # create two instances of DQN, the training and the target network
     train_net = DQN()
