@@ -174,7 +174,8 @@ def main():
 
             if mean_reward_100 >= mean_reward_bound:
                 print(f'Solved in {frame_idx} steps! Mean reward: {mean_reward_100}')
-                torch.save(target_net.state_dict(), f'cartpole_dqn_{args.task}_weights.pth')
+                torch.save(target_net.state_dict(),
+                           f'cartpole_dqn_{args.task}_mean_reward_{mean_reward_100}_weights.pth')
                 break
 
             # reset the environment and the total_reward
@@ -201,7 +202,6 @@ def main():
 
         if frame_idx % 1000 == 0:
             print(f'Loss: {loss_tensor.item()}')
-
 
 
 if __name__ == '__main__':
