@@ -1,6 +1,6 @@
 """
 
-cartpole_dqn.py
+train.py
 
 Control the Cartpole environment with the DQN-method.
 
