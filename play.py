@@ -9,7 +9,7 @@ from pathlib import Path
 import gymnasium as gym
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 import custom_cartpole
 
@@ -43,9 +43,12 @@ def parse_args():
     parser.add_argument('--task', choices=['steady', 'upswing'], type=str,
                         help='Choose the type of task, either keeping the pole steady'
                              ' or doing an upswing', required=True)
-    parser.add_argument('--weights-file', type=str, help='Path to the trained weights file', required=True)
-    parser.add_argument('--max-steps', type=int, help='The maximum number of steps to run the simulation', default=2000)
-    parser.add_argument('--output-path', type=str, help='Path to save the video to', default='output')
+    parser.add_argument('--weights-file', type=str, help='Path to the trained weights file',
+                        required=True)
+    parser.add_argument('--max-steps', help='The maximum number of steps to run the simulation',
+                        type=int, default=2000)
+    parser.add_argument('--output-path', type=str, help='Path to save the video to',
+                        default='output')
     args = parser.parse_args()
 
     return args
@@ -60,7 +63,7 @@ def play(env, obs, net):
         state_action_values = net(torch.tensor(obs))
         action = state_action_values.argmax().item()
 
-        obs, reward, done, trunc, info = env.step(action)
+        obs, reward, done, trunc, _ = env.step(action)
         total_reward += reward
 
         if done or trunc:
@@ -84,12 +87,13 @@ def main():
     net = DQN()
     try:
         net.load_state_dict(torch.load(args.weights_file))
-    except:
-        print(f'Could not load weights file {args.weights_file}')
+    except (RuntimeError, KeyError, ValueError) as e:
+        print(f'Could not load weights file {args.weights_file}! Exception: {e}')
         return
 
     # create environment
-    env = gym.make('CustomCartPole-v1', render_mode='rgb_array', upswing=upswing, max_episode_steps=args.max_steps)
+    env = gym.make('CustomCartPole-v1', render_mode='rgb_array', upswing=upswing,
+                   max_episode_steps=args.max_steps)
     obs, _ = env.reset()
     env = gym.wrappers.RecordVideo(env, video_folder=output_path)
 
