@@ -14,6 +14,9 @@ import gymnasium as gym
 import torch
 import torch.nn as nn
 
+from tensorboardX import SummaryWriter
+
+
 import custom_cartpole
 
 BATCH_SIZE = 32
@@ -134,6 +137,9 @@ def main():
     else:
         mean_reward_bound = args.max_steps
 
+    # create tensorboard writer
+    writer = SummaryWriter(comment=f'_{args.task}')
+
     # create environment
     env = gym.make('CustomCartPole-v1', render_mode='rgb_array', upswing=upswing, max_episode_steps=args.max_steps)
 
@@ -178,6 +184,11 @@ def main():
                            f'cartpole_dqn_{args.task}_mean_reward_{mean_reward_100}_weights.pth')
                 break
 
+            # at the end of each episode, write to tensorboard
+            writer.add_scalar("mean_reward_100", mean_reward_100, frame_idx)
+            writer.add_scalar("total_reward", total_reward, frame_idx)
+            writer.add_scalar("epsilon", epsilon, frame_idx)
+
             # reset the environment and the total_reward
             state, _ = env.reset()
             total_reward = 0.
@@ -201,7 +212,10 @@ def main():
         optimizer.step()
 
         if frame_idx % 1000 == 0:
+            writer.add_scalar('loss', loss_tensor.item(), frame_idx)
             print(f'Loss: {loss_tensor.item()}')
+
+    writer.close()
 
 
 if __name__ == '__main__':
