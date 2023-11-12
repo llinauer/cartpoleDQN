@@ -24,7 +24,7 @@ EPSILON_FINAL = 0.01
 EPSILON_DECAY_LAST_FRAME = 150000
 GAMMA = 0.99
 REPLAY_START_SIZE = 10000
-LEARNING_RATE = 1E-4
+LEARNING_RATE = 3E-4
 SYNC_TARGET_FRAMES = 1000
 
 
@@ -113,9 +113,9 @@ def main():
 
     # define the maximum mean reward needed for stopping training
     if upswing:
-        mean_reward_bound = args.max_steps * 0.95
+        mean_reward_bound = args.max_steps * 0.93
     else:
-        mean_reward_bound = args.max_steps
+        mean_reward_bound = args.max_steps * 0.98
 
     # create tensorboard writer
     writer = SummaryWriter(comment=f'_{args.task}')
