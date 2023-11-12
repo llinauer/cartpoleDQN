@@ -12,7 +12,7 @@ import numpy as np
 import gymnasium as gym
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from tensorboardX import SummaryWriter
 
@@ -53,12 +53,13 @@ class DQN(nn.Module):
 
 def parse_args():
     """ Parse command-line arguments """
-    
+
     parser = argparse.ArgumentParser(description='Train the cartpole system with DQN')
     parser.add_argument('--task', choices=['steady', 'upswing'], type=str,
                         help='Choose the type of task, either keeping the pole steady'
                              ' or doing an upswing', required=True)
-    parser.add_argument('--max-steps', type=int, help='The maximum number of steps to run the simulation', default=2000)
+    parser.add_argument('--max-steps', help='The maximum number of steps to run the simulation',
+                        type=int, default=2000)
     args = parser.parse_args()
 
     return args
@@ -74,14 +75,16 @@ def sample(replay_buffer, batch_size):
     states, actions, rewards, dones, next_states = zip(*[replay_buffer[idx] for idx in indices])
 
     # return the states, actions, next_states
-    return np.array(states), np.array(actions), np.array(rewards, dtype=np.float32), np.array(dones, dtype=np.uint8), \
-        np.array(next_states)
+    return np.array(states), np.array(actions), np.array(rewards, dtype=np.float32),\
+        np.array(dones, dtype=np.uint8), np.array(next_states)
 
 
 def environment_step(env, current_state, net, epsilon):
     """ Do one step in the environment.
-        Choose the action either randomly or sample the best action according to the network depending on epsilon.
-        Return the taken action, the reward, if the environment is done or truncated and the next state """
+        Choose the action either randomly or sample the best action according to the network
+        depending on epsilon.
+        Return the taken action, the reward, if the environment is done or truncated and the
+        next state """
 
     # create a random number between 0 and 1, if it is > epsilon, take a random action
     if np.random.uniform() < epsilon:
@@ -95,7 +98,7 @@ def environment_step(env, current_state, net, epsilon):
     return action, reward, done or trunc, next_state
 
 
-def calculate_loss(batch, train_net, target_net):
+def calculate_loss(batch, net, target_net):
     """ Calculate the MSELoss for predicted Q values on the batch and return it """
 
     states, actions, rewards, dones, next_states = batch  # unpack batch
@@ -106,7 +109,7 @@ def calculate_loss(batch, train_net, target_net):
     done_mask = torch.BoolTensor(dones)
     next_states_tensor = torch.tensor(next_states)
 
-    state_action_values = train_net(states_tensor).gather(1, actions_tensor.unsqueeze(-1)).squeeze(-1)
+    state_action_values = net(states_tensor).gather(1, actions_tensor.unsqueeze(-1)).squeeze(-1)
 
     # do not calculate gradients for Q values calculated with target_net
     with torch.no_grad():
@@ -125,7 +128,7 @@ def calculate_loss(batch, train_net, target_net):
 
 def main():
     """ main function """
-    
+
     # parse cl-args
     args = parse_args()
 
@@ -141,10 +144,11 @@ def main():
     writer = SummaryWriter(comment=f'_{args.task}')
 
     # create environment
-    env = gym.make('CustomCartPole-v1', render_mode='rgb_array', upswing=upswing, max_episode_steps=args.max_steps)
+    env = gym.make('CustomCartPole-v1', render_mode='rgb_array', upswing=upswing,
+                   max_episode_steps=args.max_steps)
 
     # create two instances of DQN, the training and the target network
-    train_net = DQN()
+    net = DQN()
     target_net = DQN()
 
     # create a replay buffer
@@ -153,7 +157,7 @@ def main():
     # training loop
     frame_idx = 0
     state, _ = env.reset()
-    optimizer = torch.optim.Adam(train_net.parameters(), lr=LEARNING_RATE)
+    optimizer = torch.optim.Adam(net.parameters(), lr=LEARNING_RATE)
     total_reward = 0.
     mean_rewards = collections.deque(maxlen=100)
 
@@ -165,7 +169,7 @@ def main():
         epsilon = max(EPSILON_FINAL, EPSILON_START - frame_idx / EPSILON_DECAY_LAST_FRAME)
 
         # do one step in the environment
-        action, reward, done_or_trunc, next_state = environment_step(env, state, train_net, epsilon)
+        action, reward, done_or_trunc, next_state = environment_step(env, state, net, epsilon)
         total_reward += reward
 
         # put the sampled state, reward, action and next_state in the replay buffer
@@ -200,14 +204,14 @@ def main():
         if len(replay_buffer) < REPLAY_START_SIZE:
             continue
 
-        # sync the target_net weights with the train_net weights every SYNC_TARGET_FRAMES frames
+        # sync the target_net weights with the net weights every SYNC_TARGET_FRAMES frames
         if frame_idx % SYNC_TARGET_FRAMES == 0:
-            target_net.load_state_dict(train_net.state_dict())
+            target_net.load_state_dict(net.state_dict())
 
         # gradient descent
         optimizer.zero_grad()
         batch = sample(replay_buffer, BATCH_SIZE)
-        loss_tensor = calculate_loss(batch, train_net, target_net)
+        loss_tensor = calculate_loss(batch, net, target_net)
         loss_tensor.backward()
         optimizer.step()
 
