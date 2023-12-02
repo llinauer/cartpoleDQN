@@ -206,15 +206,26 @@ class CartPoleEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
 
     def get_reward(self):
 
-        x, _, theta, _ = self.state
+        x, _, theta, omega = self.state
 
         if self.upswing:
             theta_reward = (np.cos(theta) + 1) / 2
-            pos_norm = self.x_threshold - abs(x)
-            pos_reward = x / pos_norm
+            pos_norm = abs(x) / self.x_threshold
+
+            # discourage going out of bounds
+            if pos_norm < 0.8:
+                pos_reward = 1
+            else:
+                pos_reward = -50
+
+            # discourage high angular velocities
+            if abs(omega) > 1:
+                angular_velocity_reward = -1
+            else:
+                angular_velocity_reward = 1
 
             # weight the angle reward and position reward differently, as the angle is more important
-            reward = 1/4*pos_reward + 3/4*theta_reward
+            reward = 3/7*pos_reward + 3/7*theta_reward + 1/7*angular_velocity_reward
 
         else:
             reward = 1
