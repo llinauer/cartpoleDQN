@@ -113,7 +113,7 @@ def main():
 
     # define the maximum mean reward needed for stopping training
     if upswing:
-        mean_reward_bound = args.max_steps * 0.93
+        mean_reward_bound = args.max_steps * 0.5
     else:
         mean_reward_bound = args.max_steps * 0.98
 
@@ -162,7 +162,8 @@ def main():
             if mean_reward_100 >= mean_reward_bound:
                 print(f'Solved in {frame_idx} steps! Mean reward: {mean_reward_100}')
                 torch.save(target_net.state_dict(),
-                           f'cartpole_dqn_{args.task}_mean_reward_{mean_reward_100}_weights.pth')
+                           f'cartpole_dqn_{args.task}_mean_reward_{mean_reward_100:.2f}_weights.pth'
+                           )
                 break
 
             # at the end of each episode, write to tensorboard
