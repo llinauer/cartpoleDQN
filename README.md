@@ -33,6 +33,9 @@ A Q-functions is a function, that maps a state-action pair to some real number, 
 
 $ Q: s, a \rarrow \mathbb{R} $
 
+The Q-functions is also called value function or state-action value function, in distinction to the value function V.
+
+
 
 
 
