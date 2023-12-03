@@ -54,6 +54,8 @@ This may sound a little clumsy, but it simply means that the state-action value 
 the optimal action a' in state s.
 The discount factor is a number between 0 and 1 (usually close to 1, e.g. 0.98) that forces the agent
 to put more emphasis on states that are in the near-future than those that are in the far-future.
+Once we have the Q-function for every state-action pair, we can simply choose the action a in state s,
+that has the highest Q-value assigned and therefore leads to states with higher values.
 
 So far so good, but how do we actually calculate Q?
 Imagine you have a grid world with 16 states and 4 possible actions in each state.
@@ -86,6 +88,10 @@ This system is described by four variables:
 
 ![Cartpole](images/cartpole_description.jpg)
 
+There are two possible actions:
+* Apply constant force from left
+* Apply constant force from right
+
 So, a state of the cartpole comprises four real numbers. That means the number of possible
 states is continuous, and it is impossible to come up with a table mapping Q-values to state-action pairs.
 Even if we only consider the floats, which are a subset of the real numbers that table would still be unmanageable.
@@ -98,7 +104,83 @@ Here, the DQN comes into play. Instead of representing the Q-value of each (s, a
 learn a mapping of (s, a)-pairs to Q-values.
 This mapping can be learned by sampling (s, a) pairs from the environment.
 The number of parameters $\theta$ of the NN is vastly smaller than the (possibly infinite) number of Q-values that we
-would need to construct a complete table. Additionally, if the NN learns a nice and smooth 
+would need to construct a complete table. Additionally, if the NN learns a nice and smooth mapping, then states that 
+are close to each other will also have Q-values that are close to each other.
+For our cartpole environment, the DQN has 4 input neurons (one for each state) and 2 output neurons (one for each possible
+ action). Each output corresponds to one of the Q-values.
+
+# Training
+
+So far we have seen what a Q-function is, how we can use it to choose good actions in the 
+environment and how it can be approximated by a DQN.
+Now we can get to the actual reinforcement learning, the training of the DQN.
+On a high level, training an agent with DQN can be depicted as a loop:
+
+![Training](images/training_loop.jpg)
+
+In the beginning, we initialize the DQN parameters randomly. Then we start sampling 
+from the environment. At each step, we perform an action (= apply a force to the cart).
+We obtain a tuple consisting of the current state s of the environment, the applied action a,
+the reward r and the next state s'.
+With this tuple, we can calculate an estimate of the Q-value of the state-action pair (s, a) as:
+
+$ Q(s,a) = r + max_{a'} Q(s', a') $
+
+We can calculate the quantity Q(s', a') by putting the state s' (which we have) into the DQN and choosing
+the maximum value of the two possible actions. This Q-value then becomes the target
+for training the DQN in a supervised manner. Once we have updated the DQN parameters,
+the process starts from anew.
+We loop until the average reward we can achieve in the environment is sufficiently high.
+In general, this is it and one could already go about and try to implement this loop.
+However, there is a crucial detail missing, exploration. 
+In the beginning, since we randomly initialized the DQN parameters, the Q-values it will
+produce will be very bad estimates of the real Q-values. 
+This means, that the actions we apply in the environment will in general be very bad. 
+But if we choose bad actions, then we won't get much reward and will not be able to improve
+the Q-value estimates. It is therefore easy to get stuck in a loop of bad actions.
+To prevent this, exploration is very important in the beginning. Exploration in this case means,
+not to choose the action that has the highest Q-value assigned to it, but a random action.
+By exploring a lot in the beginning, we can get good estimates for Q-values. Later, if we are
+confident that the estimates are good enough, we can turn down exploration and choose the action
+with the highest Q-value more often.
+
+## Training the DQN
+
+The actual training is done in train.py
+You can choose one of two tasks: steady and upswing
+In the steady task, the pole starts in a somewhat upright position and the goal is to keep it steady.
+If the pole falls down, the episode is over. In the harder upswing task, the pole starts hanging down and
+the goal is to swing it up and then keep it there.
+The cartpole environment is simulated with gymnasium, the DQN is implemented in pytorch.
+
+You can start training with the command:
+
+    python3 train.py --task {steady, upswing} --max-steps n
+
+The `max-steps` parameter is the maximum number of steps for each episode in the cartpole environment.
+The steady task is rather easy to master. The reward is 1 for each timestep at which the pole is still upright.
+
+I included a Tensorboard logger in the training process. Tensorboard is a nice tool that
+allows recording and visualizing different parameters and metrics during training.
+With it, you can compare the training process for different hyperparameters like the learning
+rate or batch size.
+
+![Tensorboard](images/training_with_different_hyper_params.jpg)
+
+Here you can see a screenshot of different runs logged in Tensorboard.
+
+The upswing task is somewhat harder. Here, the reward is more complicated. You need to design
+a reward that captures what you want the goal to be.
+So, if you want the pole to be upright, you need to give higher reward to states 
+where the pole is upright (angle ~ 90°) and lower reward to states where the pole hangs down (angle ~ 270°).
+If you additionally want the cart to stay in the middle of the track, you can give higher
+rewards for staying in the middle (x=0) and lower rewards for moving away from the middle (x > 0 | x < 0)
+
+
+![getthehellout](images/fleeing_cart.gif)
+
+Here, the 
+
 
 
 
