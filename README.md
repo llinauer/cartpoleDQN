@@ -3,6 +3,12 @@
 This repository is a little showcase of how to use the DQN-technique from Reinforcement Learning
 in a classic control problem, namely, cartpole.
 
+<p float="left">
+  <img src="gifs/steady_nice.gif" width="300" />
+  <img src="gifs/upswing_nice.gif" width="300" />
+</p>
+
+
 I created this repository because I was reading Maxim Lapan's book "Deep Reinforcement Learning Hands-on"
 at the time and wanted to apply what I've learned to a different problem than explained in the book.
 
@@ -88,7 +94,11 @@ What to do?
 
 ## DQN
 
-Here, the DQN comes into play. 
+Here, the DQN comes into play. Instead of representing the Q-value of each (s, a) pair explicitly, we want a NN to 
+learn a mapping of (s, a)-pairs to Q-values.
+This mapping can be learned by sampling (s, a) pairs from the environment.
+The number of parameters $\theta$ of the NN is vastly smaller than the (possibly infinite) number of Q-values that we
+would need to construct a complete table. Additionally, if the NN learns a nice and smooth 
 
 
 
