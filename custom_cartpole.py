@@ -94,7 +94,7 @@ class CartPoleEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         "render_fps": 50,
     }
 
-    def __init__(self, render_mode: Optional[str] = None, upswing=False):
+    def __init__(self, render_mode: Optional[str] = None, task='steady'):
         self.gravity = 9.8
         self.masscart = 1.0
         self.masspole = 0.1
@@ -104,7 +104,7 @@ class CartPoleEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         self.force_mag = 10.0
         self.tau = 0.02  # seconds between state updates
         self.kinematics_integrator = "euler"
-        self.upswing = upswing
+        self.task = task
 
         # Angle at which to fail the episode
         self.theta_threshold_radians = 12 * 2 * math.pi / 360
@@ -208,8 +208,27 @@ class CartPoleEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
 
         x, _, theta, omega = self.state
 
-        if self.upswing:
+        if self.task == 'upswing':
             theta_reward = (np.cos(theta) + 1) / 2
+            pos_norm = abs(x) / self.x_threshold
+
+            # discourage going out of bounds
+            if pos_norm < 0.8:
+                pos_reward = 1
+            else:
+                pos_reward = -50
+
+            # discourage high angular velocities
+            if abs(omega) > 1:
+                angular_velocity_reward = -1
+            else:
+                angular_velocity_reward = 1
+
+            # weight the angle reward and position reward differently, as the angle is more important
+            reward = 3/7*pos_reward + 3/7*theta_reward + 1/7*angular_velocity_reward
+
+        elif self.task == 'downswing':
+            theta_reward = -np.cos(np.pi)
             pos_norm = abs(x) / self.x_threshold
 
             # discourage going out of bounds

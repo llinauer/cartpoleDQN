@@ -32,7 +32,7 @@ def parse_args():
     """ Parse command-line arguments """
 
     parser = argparse.ArgumentParser(description='Train the cartpole system with DQN')
-    parser.add_argument('--task', choices=['steady', 'upswing'], type=str,
+    parser.add_argument('--task', choices=['steady', 'upswing', 'downswing'], type=str,
                         help='Choose the type of task, either keeping the pole steady'
                              ' or doing an upswing', required=True)
     parser.add_argument('--max-steps', help='The maximum number of steps to run the simulation',
@@ -109,11 +109,11 @@ def main():
     # parse cl-args
     args = parse_args()
 
-    upswing = args.task == 'upswing'
-
     # define the maximum mean reward needed for stopping training
-    if upswing:
+    if args.task == 'upswing':
         mean_reward_bound = args.max_steps * 0.5
+    elif args.task == 'downswing':
+        mean_reward_bound = args.max_steps * 0.8
     else:
         mean_reward_bound = args.max_steps * 0.98
 
@@ -121,7 +121,7 @@ def main():
     writer = SummaryWriter(comment=f'_{args.task}')
 
     # create environment
-    env = gym.make('CustomCartPole-v1', render_mode='rgb_array', upswing=upswing,
+    env = gym.make('CustomCartPole-v1', render_mode='rgb_array', task=args.task,
                    max_episode_steps=args.max_steps)
 
     # create two instances of DQN, the training and the target network
