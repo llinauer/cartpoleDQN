@@ -122,7 +122,7 @@ class CartPoleEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
             dtype=np.float32,
         )
 
-        self.action_space = spaces.Discrete(2)
+        self.action_space = spaces.Discrete(3)
         self.observation_space = spaces.Box(-high, high, dtype=np.float32)
 
         self.render_mode = render_mode
@@ -142,7 +142,13 @@ class CartPoleEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         ), f"{action!r} ({type(action)}) invalid"
         assert self.state is not None, "Call reset before using step method."
         x, x_dot, theta, theta_dot = self.state
-        force = self.force_mag if action == 1 else -self.force_mag
+        if action == 0:
+            force = -self.force_mag
+        elif action == 1:
+            force = self.force_mag
+        else:
+            force = 0
+
         costheta = math.cos(theta)
         sintheta = math.sin(theta)
 
@@ -169,7 +175,7 @@ class CartPoleEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
 
         self.state = (x, x_dot, theta, theta_dot)
 
-        if self.upswing:
+        if self.task == 'upswing' or self.task == 'downswing':
             terminated = bool(
                 x < -self.x_threshold
                 or x > self.x_threshold
@@ -264,8 +270,10 @@ class CartPoleEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
             options, -0.05, 0.05  # default low
         )  # default high
 
-        if self.upswing:
+        if self.task == 'upswing':
             start_theta = np.pi
+        elif self.task == 'downswing':
+            start_theta = np.pi/2
         else:
             start_theta = 0.
 

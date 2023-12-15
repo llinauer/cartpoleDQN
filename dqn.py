@@ -18,7 +18,7 @@ class DQN(nn.Module):
         # define layers
         self.fc1 = nn.Linear(4, 128)
         self.fc2 = nn.Linear(128, 128)
-        self.fc3 = nn.Linear(128, 2)
+        self.fc3 = nn.Linear(128, 3)
 
     def forward(self, x):
         """ Forward pass through the network """
