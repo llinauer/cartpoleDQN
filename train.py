@@ -20,7 +20,7 @@ import custom_cartpole
 
 BATCH_SIZE = 32
 EPSILON_START = 1.0
-EPSILON_FINAL = 0.01
+EPSILON_FINAL = 0.00
 EPSILON_DECAY_LAST_FRAME = 150000
 GAMMA = 0.99
 REPLAY_START_SIZE = 10000
@@ -34,7 +34,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Train the cartpole system with DQN')
     parser.add_argument('--task', choices=['steady', 'upswing', 'downswing'], type=str,
                         help='Choose the type of task, either keeping the pole steady'
-                             ' or doing an upswing', required=True)
+                             ', doing an upswing or a downswing', required=True)
     parser.add_argument('--max-steps', help='The maximum number of steps to run the simulation',
                         type=int, default=2000)
     args = parser.parse_args()
@@ -177,6 +177,9 @@ def main():
 
         if frame_idx % 10000 == 0:
             print(f'Timestep: {frame_idx}, mean reward of the last 100 episodes: {mean_reward_100}')
+
+        if frame_idx % 200_000 == 0:
+            torch.save(target_net.state_dict(), f'current_weights.pth')
 
         # fill the buffer before training
         if len(replay_buffer) < REPLAY_START_SIZE:

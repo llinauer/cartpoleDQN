@@ -18,9 +18,9 @@ def parse_args():
     """ Parse command-line arguments """
 
     parser = argparse.ArgumentParser(description='Run the cartpole simulation with trained weights')
-    parser.add_argument('--task', choices=['steady', 'upswing'], type=str,
-                        help='Choose the type of task, either keeping the pole steady'
-                             ' or doing an upswing', required=True)
+    parser.add_argument('--task', choices=['steady', 'upswing', 'downswing'], type=str,
+                        help='Choose the type of task, either keeping the pole steady, '
+                             'doing an upswing or a downswing', required=True)
     parser.add_argument('--weights-file', type=str, help='Path to the trained weights file',
                         required=True)
     parser.add_argument('--max-steps', help='The maximum number of steps to run the simulation',
@@ -54,7 +54,6 @@ def main():
 
     # parse args
     args = parse_args()
-    upswing = args.task == 'upswing'
 
     # create output path
     output_path = Path(args.output_path)
@@ -70,7 +69,7 @@ def main():
         return
 
     # create environment
-    env = gym.make('CustomCartPole-v1', render_mode='rgb_array', upswing=upswing,
+    env = gym.make('CustomCartPole-v1', render_mode='rgb_array', task=args.task,
                    max_episode_steps=args.max_steps)
     obs, _ = env.reset()
     env = gym.wrappers.RecordVideo(env, video_folder=output_path)

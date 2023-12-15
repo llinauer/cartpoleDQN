@@ -212,7 +212,7 @@ class CartPoleEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
 
     def get_reward(self):
 
-        x, _, theta, omega = self.state
+        x, velocity, theta, omega = self.state
 
         if self.task == 'upswing':
             theta_reward = (np.cos(theta) + 1) / 2
@@ -234,23 +234,9 @@ class CartPoleEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
             reward = 3/7*pos_reward + 3/7*theta_reward + 1/7*angular_velocity_reward
 
         elif self.task == 'downswing':
-            theta_reward = -np.cos(np.pi)
-            pos_norm = abs(x) / self.x_threshold
-
-            # discourage going out of bounds
-            if pos_norm < 0.8:
-                pos_reward = 1
-            else:
-                pos_reward = -50
-
-            # discourage high angular velocities
-            if abs(omega) > 1:
-                angular_velocity_reward = -1
-            else:
-                angular_velocity_reward = 1
-
-            # weight the angle reward and position reward differently, as the angle is more important
-            reward = 3/7*pos_reward + 3/7*theta_reward + 1/7*angular_velocity_reward
+            reward = 0
+            if np.pi - 0.05 < theta < np.pi + 0.05 and abs(omega) < 0.02 and abs(velocity) < 0.1:
+                reward += 1
 
         else:
             reward = 1
@@ -271,15 +257,14 @@ class CartPoleEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         )  # default high
 
         if self.task == 'upswing':
-            start_theta = np.pi
+            start_theta = self.np_random.uniform(low=low, high=high) + np.pi
         elif self.task == 'downswing':
-            start_theta = np.pi/2
+            start_theta = self.np_random.uniform(low=np.pi - 2, high=np.pi + 2)
         else:
-            start_theta = 0.
+            start_theta = self.np_random.uniform(low=low, high=high)
 
-        start_x = self.np_random.uniform(low=low, high=high)
+        start_x = self.np_random.uniform(low=-0.2, high=0.2)
         start_x_dot = self.np_random.uniform(low=low, high=high)
-        start_theta = self.np_random.uniform(low=low, high=high) + start_theta
         start_theta_dot = self.np_random.uniform(low=low, high=high)
 
         self.state = np.array([start_x, start_x_dot, start_theta, start_theta_dot])
