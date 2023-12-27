@@ -4,8 +4,9 @@ This repository is a little showcase of how to use the DQN-technique from Reinfo
 in a classic control problem, namely, cartpole.
 
 <p float="left">
-  <img src="gifs/steady_nice.gif" width="300" />
-  <img src="gifs/upswing_nice.gif" width="300" />
+  <img src="gifs/steady_nice.gif" width="200" />
+  <img src="gifs/upswing_nice.gif" width="200" />
+  <img src="gifs/downswing_nice.gif" width="200" />
 </p>
 
 
@@ -147,15 +148,16 @@ with the highest Q-value more often.
 ## Training the DQN
 
 The actual training is done in train.py
-You can choose one of two tasks: steady and upswing
+You can choose one of three tasks: steady, upswing and downswing
 In the steady task, the pole starts in a somewhat upright position and the goal is to keep it steady.
 If the pole falls down, the episode is over. In the harder upswing task, the pole starts hanging down and
-the goal is to swing it up and then keep it there.
+the goal is to swing it up and then keep it there. Downswing is the opposite of upswing. The pole starts in
+a somewhat upright position and the task is to stabilize it in the downwards position as fast as possible.
 The cartpole environment is simulated with gymnasium, the DQN is implemented in pytorch.
 
 You can start training with the command:
 
-    python3 train.py --task {steady, upswing} --max-steps n
+    python3 train.py --task {steady, upswing, downswing} --max-steps n
 
 The `max-steps` parameter is the maximum number of steps for each episode in the cartpole environment.
 The steady task is rather easy to master. The reward is 1 for each timestep at which the pole is still upright.
@@ -169,17 +171,34 @@ rate or batch size.
 
 Here you can see a screenshot of different runs logged in Tensorboard.
 
-The upswing task is somewhat harder. Here, the reward is more complicated. You need to design
+The upswing and downswing tasks are somewhat harder. Here, the reward is more complicated. You need to design
 a reward that captures what you want the goal to be.
-So, if you want the pole to be upright, you need to give higher reward to states 
-where the pole is upright (angle ~ 90°) and lower reward to states where the pole hangs down (angle ~ 270°).
+For example, if you want the pole to be upright, you need to give higher reward to states 
+where the pole is upright (angle ~ 0°) and lower reward to states where the pole hangs down (angle ~ 180°).
 If you additionally want the cart to stay in the middle of the track, you can give higher
-rewards for staying in the middle (x=0) and lower rewards for moving away from the middle (x > 0 | x < 0)
+rewards for staying in the middle (x=0) and lower rewards for moving away from the middle (x > 0 | x < 0).
+There are some subtleties in designing the reward function that one can easily trip over.
+For example, when the agent only gets reward for keeping the pole upright, it might try to maximize the time the pole
+is upright by spinning it as fast as possible:
 
+![windmill](gifs/windmill.gif)
 
-![getthehellout](images/fleeing_cart.gif)
+You can prevent this e.g. by adding a term that punishes high angular velocities.
 
-Here, the 
+The magnitude of the reward also matters. For example, if you give a negative reward for moving away from the middle and this reward
+is higher in magnitude than the positive reward the agent gets for keeping the pole upright; the agent might try
+to move the cart out of bounds as fast as possible to end the episode and to keep the negative reward
+as low as possible:
+
+![getthehellout](gifs/fleeing_cart.gif)
+
+Once the training is finished, the weights of the DQN will be saved to a .pth file.
+
+## Running the trained policies
+
+Finally, if you want to run the trained policies, you can do so by executing:
+
+    python3 play.py --task {steady, upswing, downswing} --max-steps n --weights-file <your trained weights>
 
 
 
