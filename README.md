@@ -38,14 +38,14 @@ Ok, so DQN is concerned with a Q-function. But what is a Q-function?
 
 A Q-functions is a function, that maps a state-action pair to some real number, called the Q-value:
 
-$ Q: s, a \rarrow \mathbb{R} $
+$$ Q: s, a \rightarrow \mathbb{R} $$
 
 The Q-functions is also called value function or state-action value function, in distinction to the state-value function V.
 The output of Q is called the Q-value or state-action value.
 In every state, for every possible action, the Q-function tells us the value of this action.
 It can be defined recursively by the Bellmann equation:
 
-$ Q(s, a) = r(s, a) + \gamma * max_{a'} Q(s', a') $
+$$ Q(s, a) = r(s, a) + \gamma * max_{a'}  Q(s', a') $$
 
 The state-action value of the current pair (s, a) is equal to the reward obtained by doing
 action a in state s + the discounted state-action value of the state s', reached by performing
@@ -125,7 +125,7 @@ We obtain a tuple consisting of the current state s of the environment, the appl
 the reward r and the next state s'.
 With this tuple, we can calculate an estimate of the Q-value of the state-action pair (s, a) as:
 
-$ Q(s,a) = r + max_{a'} Q(s', a') $
+$$ Q(s,a) = r + max_{a'} Q(s', a') $$
 
 We can calculate the quantity Q(s', a') by putting the state s' (which we have) into the DQN and choosing
 the maximum value of the two possible actions. This Q-value then becomes the target
