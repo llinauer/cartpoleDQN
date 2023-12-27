@@ -71,7 +71,7 @@ def main():
     # create environment
     env = gym.make('CustomCartPole-v1', render_mode='rgb_array', task=args.task,
                    max_episode_steps=args.max_steps)
-    obs, _ = env.reset()
+    obs, _ = env.reset(train=False)
     env = gym.wrappers.RecordVideo(env, video_folder=output_path)
 
     # run the simulation

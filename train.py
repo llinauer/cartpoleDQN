@@ -113,7 +113,7 @@ def main():
     if args.task == 'upswing':
         mean_reward_bound = args.max_steps * 0.5
     elif args.task == 'downswing':
-        mean_reward_bound = args.max_steps * 0.8
+        mean_reward_bound = args.max_steps * 0.9
     else:
         mean_reward_bound = args.max_steps * 0.98
 
@@ -133,7 +133,7 @@ def main():
 
     # training loop
     frame_idx = 0
-    state, _ = env.reset()
+    state, _ = env.reset(train=True)
     optimizer = torch.optim.Adam(net.parameters(), lr=LEARNING_RATE)
     total_reward = 0.
     mean_rewards = collections.deque(maxlen=100)
@@ -172,7 +172,7 @@ def main():
             writer.add_scalar("epsilon", epsilon, frame_idx)
 
             # reset the environment and the total_reward
-            state, _ = env.reset()
+            state, _ = env.reset(train=True)
             total_reward = 0.
 
         if frame_idx % 10000 == 0:
