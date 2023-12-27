@@ -113,7 +113,7 @@ def main():
     if args.task == 'upswing':
         mean_reward_bound = args.max_steps * 0.5
     elif args.task == 'downswing':
-        mean_reward_bound = args.max_steps * 0.9
+        mean_reward_bound = args.max_steps * 0.75
     else:
         mean_reward_bound = args.max_steps * 0.98
 
@@ -178,7 +178,7 @@ def main():
         if frame_idx % 10000 == 0:
             print(f'Timestep: {frame_idx}, mean reward of the last 100 episodes: {mean_reward_100}')
 
-        if frame_idx % 200_000 == 0:
+        if frame_idx % 50_000 == 0:
             torch.save(target_net.state_dict(), f'current_weights.pth')
 
         # fill the buffer before training
