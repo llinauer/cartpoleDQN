@@ -234,9 +234,24 @@ class CartPoleEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
             reward = 3/7*pos_reward + 3/7*theta_reward + 1/7*angular_velocity_reward
 
         elif self.task == 'downswing':
-            reward = 0
-            if np.pi - 0.05 < theta < np.pi + 0.05 and abs(omega) < 0.02 and abs(velocity) < 0.1:
-                reward += 1
+
+            reward = 1
+
+            # if cart is going out of bounds, punish hard
+            if abs(x) > self.x_threshold:
+                reward -= 1000
+
+            # give reward for keeping the pole around theta = pi (or 3*pi, 5*pi, ...)
+            theta_wrapped = (theta + np.pi) % (2 * np.pi) - np.pi
+            theta_symmetric = abs(theta_wrapped)
+
+            distance_to_target = abs(theta_symmetric - np.pi)
+            reward -= distance_to_target / np.pi
+
+            # punish high angular velocities
+            reward -= abs(omega) / 10
+            # punish being away from x=0
+            reward -= abs(x) / self.x_threshold
 
         else:
             reward = 1
@@ -248,26 +263,35 @@ class CartPoleEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         *,
         seed: Optional[int] = None,
         options: Optional[dict] = None,
+        train=False,
+        state=None
     ):
         super().reset(seed=seed)
         # Note that if you use custom reset bounds, it may lead to out-of-bound
         # state/observations.
-        low, high = utils.maybe_parse_reset_bounds(
-            options, -0.05, 0.05  # default low
-        )  # default high
 
-        if self.task == 'upswing':
-            start_theta = self.np_random.uniform(low=low, high=high) + np.pi
-        elif self.task == 'downswing':
-            start_theta = self.np_random.uniform(low=np.pi - 2, high=np.pi + 2)
+        if state is not None:
+            self.state = np.array(state)
         else:
-            start_theta = self.np_random.uniform(low=low, high=high)
+            low, high = utils.maybe_parse_reset_bounds(
+                options, -0.05, 0.05  # default low
+            )  # default high
 
-        start_x = self.np_random.uniform(low=-0.2, high=0.2)
-        start_x_dot = self.np_random.uniform(low=low, high=high)
-        start_theta_dot = self.np_random.uniform(low=low, high=high)
+            if self.task == 'upswing':
+                start_theta = self.np_random.uniform(low=low, high=high) + np.pi
+            elif self.task == 'downswing':
+                if train:
+                    start_theta = self.np_random.uniform(low=0, high=2*np.pi)
+                else:
+                    start_theta = self.np_random.uniform(low=-0.5, high=0.5)
+            else:
+                start_theta = self.np_random.uniform(low=low, high=high)
 
-        self.state = np.array([start_x, start_x_dot, start_theta, start_theta_dot])
+            start_x = self.np_random.uniform(low=-0.2, high=0.2)
+            start_x_dot = self.np_random.uniform(low=low, high=high)
+            start_theta_dot = self.np_random.uniform(low=low, high=high)
+
+            self.state = np.array([start_x, start_x_dot, start_theta, start_theta_dot])
         self.steps_beyond_terminated = None
 
         if self.render_mode == "human":
