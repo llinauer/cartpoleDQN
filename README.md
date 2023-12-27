@@ -3,13 +3,6 @@
 This repository is a little showcase of how to use the DQN-technique from Reinforcement Learning
 in a classic control problem, namely, cartpole.
 
-<p float="left">
-  <img src="gifs/steady_nice.gif" width="200" />
-  <img src="gifs/upswing_nice.gif" width="200" />
-  <img src="gifs/downswing_nice.gif" width="200" />
-</p>
-
-
 I created this repository because I was reading Maxim Lapan's book "Deep Reinforcement Learning Hands-on"
 at the time and wanted to apply what I've learned to a different problem than explained in the book.
 
@@ -18,6 +11,32 @@ Each repo will be dedicated to a different technique, applied on different bench
 Additionally, I will talk a little about how these techniques work, what is the theory behind, how you can improve performance
 and so on. 
 I hope you'll enjoy it.
+
+# TLDR
+
+You can train a DQN on the cartpole gymnasium environment with three different tasks: steady, upswing and downswing.
+To install the necessary dependencies, run:
+
+    python3 -m pip install -r requirements.txt
+
+
+Training is done via:
+
+    python3 train.py --task {steady, upswing, downswing} --max-steps n
+
+You can test the trained DQN on the environment via:
+
+    python3 play.py --task {steady, upswing, downswing} --max-steps n --weights-file <your trained weights>
+
+Here are examplary results:
+
+<p float="left">
+  <img src="gifs/steady_nice.gif" width="200" />
+  <img src="gifs/upswing_nice.gif" width="200" />
+  <img src="gifs/downswing_nice.gif" width="200" />
+</p>
+
+# The long version
 
 # Deep Q-Learning
 
